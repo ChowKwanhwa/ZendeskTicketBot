@@ -1,0 +1,15 @@
+{
+  "name": "zendesk-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot integrated with Zendesk support system",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "node-zendesk": "^2.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}
