@@ -110,17 +110,74 @@ bot.onText(/\/close/i, async (msg) => {
 
   if (ticketId) {
     try {
-      // Update ticket status to solved
+      // 提供问题类型选项
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: 'General Inquiry', callback_data: 'close_general' },
+            { text: 'Technical Issue', callback_data: 'close_technical' }
+          ],
+          [
+            { text: 'Account Issue', callback_data: 'close_account' },
+            { text: 'Other', callback_data: 'close_other' }
+          ]
+        ]
+      };
+
+      bot.sendMessage(chatId, 'Please select a reason to close your ticket:', { reply_markup: keyboard });
+    } catch (error) {
+      console.error('Error:', error);
+      bot.sendMessage(chatId, 'Sorry, there was an error closing your ticket.');
+    }
+  } else {
+    bot.sendMessage(chatId, 'You don\'t have an active support ticket. Send /start to create one.');
+  }
+});
+
+// Handle close ticket callback
+bot.on('callback_query', async (callbackQuery) => {
+  const chatId = callbackQuery.message.chat.id;
+  const ticketId = userConversations.get(chatId);
+  const data = callbackQuery.data;
+
+  if (data.startsWith('close_') && ticketId) {
+    try {
+      // Map callback data to question type
+      const questionTypeMap = {
+        'close_general': 'chat',  // 一般咨询
+        'close_technical': 'abnormal_problem',  // 技术问题
+        'close_account': 'account_issues',  // 账户问题
+        'close_other': 'deposit_and_withdrawal_problem'  // 其他
+      };
+
+      const questionTypeTag = questionTypeMap[data];
+      const questionTypeDisplay = {
+        'chat': 'General Inquiry',
+        'abnormal_problem': 'Technical Issue',
+        'account_issues': 'Account Issue',
+        'deposit_and_withdrawal_problem': 'Other'
+      }[questionTypeTag];
+
+      // Update ticket with question type and solve it
       await zendeskClient.tickets.update(ticketId, {
         ticket: {
           status: 'solved',
+          custom_fields: [
+            {
+              id: 6742685813785,
+              value: questionTypeTag
+            }
+          ],
           comment: {
-            body: 'User closed the conversation',
-            public: false
+            body: `User closed the conversation (Type: ${questionTypeDisplay})`,
+            public: false,
+            author_id: userConversations.get(`${chatId}_user_id`)
           }
         }
       });
 
+      // Answer callback query and send success message
+      await bot.answerCallbackQuery(callbackQuery.id);
       userConversations.delete(chatId);
       bot.sendMessage(chatId, 
         'Your support ticket has been closed. 🎉\n\n' +
@@ -128,10 +185,19 @@ bot.onText(/\/close/i, async (msg) => {
       );
     } catch (error) {
       console.error('Error:', error);
+      if (error.result) {
+        console.error('Error details:', error.result.toString());
+      }
       bot.sendMessage(chatId, 'Sorry, there was an error closing your ticket.');
+      await bot.answerCallbackQuery(callbackQuery.id, {
+        text: 'Error closing ticket'
+      });
     }
   } else {
-    bot.sendMessage(chatId, 'You don\'t have an active support ticket. Send /start to create one.');
+    await bot.answerCallbackQuery(callbackQuery.id);
+    if (!ticketId) {
+      bot.sendMessage(chatId, 'You don\'t have an active support ticket. Send /start to create one.');
+    }
   }
 });
 
