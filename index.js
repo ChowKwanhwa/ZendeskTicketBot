@@ -23,6 +23,8 @@ app.use(express.json());
 // Handle /start command
 bot.onText(/\/start/i, async (msg) => {
   const chatId = msg.chat.id;
+  // 只在私聊中响应
+  if (msg.chat.type !== 'private') return;
   bot.sendMessage(chatId, 
     'Welcome to SuperEx Support! 👋\n\n' +
     'Use /ticket to create a new support ticket\n' +
@@ -33,6 +35,8 @@ bot.onText(/\/start/i, async (msg) => {
 // Handle /ticket command
 bot.onText(/\/ticket/i, async (msg) => {
   const chatId = msg.chat.id;
+  // 只在私聊中响应
+  if (msg.chat.type !== 'private') return;
 
   // Check if user already has an active ticket
   if (userConversations.has(chatId)) {
@@ -106,6 +110,8 @@ bot.onText(/\/ticket/i, async (msg) => {
 // Handle /close command
 bot.onText(/\/close/i, async (msg) => {
   const chatId = msg.chat.id;
+  // 只在私聊中响应
+  if (msg.chat.type !== 'private') return;
   const ticketId = userConversations.get(chatId);
 
   if (ticketId) {
@@ -203,6 +209,8 @@ bot.on('callback_query', async (callbackQuery) => {
 
 // Handle regular messages
 bot.on('message', async (msg) => {
+  // 只在私聊中响应
+  if (msg.chat.type !== 'private') return;
   const chatId = msg.chat.id;
   const messageText = msg.text;
   const userDisplayName = msg.from.username || msg.from.first_name || `User_${msg.from.id}`;
